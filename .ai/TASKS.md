@@ -2,11 +2,11 @@
 
 ## Active
 
-- Validate the new local Docker Compose observability stack and publish the repository.
+- Validate the new local Docker Compose observability stack when Docker is available.
 
 ## Planned
 
-- Create the requested Git remote and repository topics after local validation.
+- None.
 
 ## Blocked
 
