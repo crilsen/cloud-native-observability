@@ -18,6 +18,26 @@ flowchart LR
 
 OpenTelemetry is the application-facing telemetry layer. The Collector is the backend-neutral ingestion boundary: services do not depend on Grafana, Prometheus, Tempo or Loki SDKs.
 
+## How it works
+
+### OpenTelemetry (OTel)
+
+OpenTelemetry is an open standard for instrumenting applications and producing **traces**, **metrics**, and **logs**. In this project, the FastAPI services use OTel to create telemetry and propagate the W3C trace context across the checkout flow. The applications only send OTLP data; they are not coupled to any specific observability backend.
+
+### OpenTelemetry Collector
+
+The Collector is the centralized ingestion and routing layer. It receives OTLP from every application, batches the data, and sends each signal to the appropriate backend. This separation means a backend can evolve without rewriting application instrumentation.
+
+### Tempo
+
+Grafana Tempo stores **distributed traces**. A single checkout creates one trace spanning `frontend-api`, `orders-api`, and `payment-api`. In Grafana, this makes it possible to see every span, its duration, HTTP attributes, and which service is responsible for a slow request.
+
+### Prometheus, Loki, and Grafana
+
+- **Prometheus** stores and queries metrics such as request rate, duration, and HTTP status.
+- **Loki** stores structured logs. The log records include `trace_id` and `span_id`, enabling correlation with a trace.
+- **Grafana** is the unified analysis interface: it connects to Prometheus, Tempo, and Loki so an investigation can move from a latency panel to a trace and then to related logs.
+
 ## Technologies
 
 - Python 3.12 and FastAPI
