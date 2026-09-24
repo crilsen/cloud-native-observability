@@ -1,0 +1,93 @@
+services:
+  frontend-api:
+    build: ./apps/frontend-api
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+      ORDERS_API_URL: http://orders-api:8001
+    ports: ["8000:8000"]
+    depends_on:
+      otel-collector: { condition: service_started }
+      orders-api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [observability]
+  orders-api:
+    build: ./apps/orders-api
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+      PAYMENT_API_URL: http://payment-api:8002
+    ports: ["8001:8001"]
+    depends_on:
+      otel-collector: { condition: service_started }
+      payment-api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [observability]
+  payment-api:
+    build: ./apps/payment-api
+    environment: { OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317 }
+    ports: ["8002:8002"]
+    depends_on:
+      otel-collector: { condition: service_started }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [observability]
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes: ["./otel/collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro"]
+    ports: ["4317:4317", "4318:4318"]
+    depends_on: [tempo, loki]
+    networks: [observability]
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--web.enable-remote-write-receiver"]
+    volumes: ["./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro", "prometheus-data:/prometheus"]
+    ports: ["9090:9090"]
+    networks: [observability]
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes: ["./tempo/tempo.yaml:/etc/tempo.yaml:ro", "tempo-data:/var/tempo"]
+    ports: ["3200:3200"]
+    networks: [observability]
+  loki:
+    image: grafana/loki:3.3.2
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes: ["./loki/loki.yaml:/etc/loki/local-config.yaml:ro", "loki-data:/loki"]
+    ports: ["3100:3100"]
+    networks: [observability]
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes: ["grafana-data:/var/lib/grafana", "./grafana/provisioning:/etc/grafana/provisioning:ro"]
+    ports: ["3000:3000"]
+    depends_on: [prometheus, tempo, loki]
+    networks: [observability]
+  load-generator:
+    image: grafana/k6:0.55.0
+    profiles: [traffic]
+    volumes: ["./load-generator:/scripts:ro"]
+    command: ["run", "/scripts/checkout.js"]
+    depends_on:
+      frontend-api: { condition: service_healthy }
+    networks: [observability]
+volumes:
+  prometheus-data:
+  tempo-data:
+  loki-data:
+  grafana-data:
+networks:
+  observability:
+    driver: bridge

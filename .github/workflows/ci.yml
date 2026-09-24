@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate Python syntax and basic structure
+        run: |
+          python -m compileall apps
+          python -m unittest discover -s tests
+  docker-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [frontend-api, orders-api, payment-api]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.service }}
+        run: docker build -t ${{ matrix.service }} ./apps/${{ matrix.service }}
