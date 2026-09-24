@@ -66,6 +66,12 @@ Expected public endpoints:
 
 Grafana uses the local development credentials `admin` / `admin`.
 
+If port 3000 is already in use, start Grafana on another local port without changing the stack configuration:
+
+```bash
+GRAFANA_PORT=3001 make up
+```
+
 ### Generate and verify telemetry
 
 Send a normal checkout, then force the intentional slow-payment path:
@@ -112,16 +118,16 @@ The Collector Prometheus exporter exposes OpenTelemetry HTTP histogram data unde
 
 ```promql
 # Request rate
-sum(rate(http_server_request_duration_seconds_count[5m]))
+sum(rate(http_server_duration_milliseconds_count[5m]))
 
 # Requests by service
-sum by (service_name) (rate(http_server_request_duration_seconds_count[5m]))
+sum by (exported_job) (rate(http_server_duration_milliseconds_count[5m]))
 
 # p95 request duration by service
-histogram_quantile(0.95, sum by (le, service_name) (rate(http_server_request_duration_seconds_bucket[5m])))
+histogram_quantile(0.95, sum by (le, exported_job) (rate(http_server_duration_milliseconds_bucket[5m])))
 
 # 5xx error rate
-sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+sum(rate(http_server_duration_milliseconds_count{http_status_code=~"5.."}[5m]))
 ```
 
 ## Commands

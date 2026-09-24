@@ -6,16 +6,17 @@ import os
 import httpx
 from fastapi import FastAPI, HTTPException, Query
 from opentelemetry import trace
+from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler, set_logger_provider
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import RESOURCE_ATTRIBUTES, Resource
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import set_tracer_provider
@@ -29,7 +30,7 @@ class JsonFormatter(logging.Formatter):
         return json.dumps({"level": record.levelname, "service": SERVICE_NAME, "message": record.getMessage(), "trace_id": format(ctx.trace_id, "032x") if ctx.is_valid else "", "span_id": format(ctx.span_id, "016x") if ctx.is_valid else ""})
 
 def setup():
-    resource = Resource.create({RESOURCE_ATTRIBUTES.SERVICE_NAME: SERVICE_NAME})
+    resource = Resource.create({"service.name": SERVICE_NAME})
     provider = TracerProvider(resource=resource); provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=OTLP_ENDPOINT, insecure=True))); set_tracer_provider(provider)
     from opentelemetry.metrics import set_meter_provider
     set_meter_provider(MeterProvider(resource=resource, metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter(endpoint=OTLP_ENDPOINT, insecure=True))]))

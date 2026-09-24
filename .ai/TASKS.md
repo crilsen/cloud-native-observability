@@ -2,7 +2,7 @@
 
 ## Active
 
-- Validate the new local Docker Compose observability stack when Docker is available.
+- None.
 
 ## Planned
 
@@ -10,8 +10,9 @@
 
 ## Blocked
 
-- Docker daemon is not running or reachable at `/Users/cristiano/.docker/run/docker.sock`.
+- None.
 
 ## Completed
 
 - Implemented the initial FastAPI, OpenTelemetry, Collector, Grafana, Compose, k6, Makefile, CI and documentation artifacts.
+- Validated checkout normal and slow flows, distributed traces in Tempo, Prometheus HTTP metrics, and JSON trace-correlated service logs.

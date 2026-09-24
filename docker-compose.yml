@@ -72,7 +72,7 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes: ["grafana-data:/var/lib/grafana", "./grafana/provisioning:/etc/grafana/provisioning:ro"]
-    ports: ["3000:3000"]
+    ports: ["${GRAFANA_PORT:-3000}:3000"]
     depends_on: [prometheus, tempo, loki]
     networks: [observability]
   load-generator:
