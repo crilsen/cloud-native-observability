@@ -34,19 +34,68 @@ OpenTelemetry is the application-facing telemetry layer. The Collector is the ba
 
 ## Run locally
 
+### Prerequisites
+
+- Docker Desktop (or Docker Engine) running
+- Docker Compose v2 (`docker compose version`)
+- `curl` for the smoke-test commands
+
+### Start the stack
+
 ```bash
+git clone https://github.com/crilsen/cloud-native-observability.git
+cd cloud-native-observability
 make up
+```
+
+Wait until the three APIs report `healthy`:
+
+```bash
+docker compose ps
+```
+
+Expected public endpoints:
+
+| Component | URL |
+| --- | --- |
+| Checkout API | http://localhost:8000 |
+| Grafana | http://localhost:3000 |
+| Prometheus | http://localhost:9090 |
+| Tempo | http://localhost:3200 |
+| Loki | http://localhost:3100 |
+
+Grafana uses the local development credentials `admin` / `admin`.
+
+### Generate and verify telemetry
+
+Send a normal checkout, then force the intentional slow-payment path:
+
+```bash
 curl http://localhost:8000/checkout
 curl 'http://localhost:8000/checkout?slow=true'
 ```
 
-Open Grafana at http://localhost:3000 (`admin` / `admin`) and select **Observability / Cloud Native Observability Overview**. Prometheus is available at http://localhost:9090, Tempo at http://localhost:3200, and Loki at http://localhost:3100.
+Open Grafana and select **Observability / Cloud Native Observability Overview**. Give Prometheus one scrape interval (up to a few seconds) after the requests before reviewing the panels.
 
 To create continuous traffic:
 
 ```bash
 make traffic
 ```
+
+To inspect startup or telemetry errors:
+
+```bash
+make logs
+```
+
+Stop the stack while retaining dashboards and telemetry data:
+
+```bash
+make down
+```
+
+To remove the local volumes as well, run `make clean`.
 
 ## Troubleshooting demo
 
